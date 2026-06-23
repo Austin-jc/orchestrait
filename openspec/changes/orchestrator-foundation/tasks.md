@@ -32,11 +32,11 @@
 
 ## 5. Visualizer UI — live run + configuration
 
-- [ ] 5.1 Scaffold the local Next.js/React app and an SSE/WebSocket client for the run event stream
-- [ ] 5.2 Render the plan as a React Flow DAG (nodes = steps, edges = `access`, badge = primitive) on `plan_ready`
-- [ ] 5.3 Animate node states (pending → running → pass/fail) from live events; show live budget meters per active axis
-- [ ] 5.4 Build the worker registry + secrets config UI (add/edit/test/remove workers, choose adapter kind, store keys encrypted)
-- [ ] 5.5 Build parameter tuning (budget axes, temperatures, planner prompt/primitive guidance, verifier selection) with named presets
+- [x] 5.1 Scaffold the local Next.js/React app and an SSE/WebSocket client for the run event stream
+- [x] 5.2 Render the plan as a React Flow DAG (nodes = steps, edges = `access`, badge = primitive) on `plan_ready`
+- [x] 5.3 Animate node states (pending → running → pass/fail) from live events; show live budget meters per active axis
+- [x] 5.4 Build the worker registry + secrets config UI (add/edit/test/remove workers, choose adapter kind, store keys encrypted)
+- [x] 5.5 Build parameter tuning (budget axes, temperatures, planner prompt/primitive guidance, verifier selection) with named presets
 
 ## 6. Verifiers and escalation (the win mechanism)
 
@@ -55,11 +55,11 @@
 - [x] 7.3 Implement the calibration store with TTL/freshness and worker-version-change invalidation
 - [x] 7.4 Wire the planner to read calibration win-rates into its prompt (grounded assignment)
 - [x] 7.5 Implement the eval/proof mode: orchestrator vs each single worker, anchored to Baseline A (same-model single-shot)
-- [ ] 7.6 Build the benchmark/proof UI view (orchestrator-vs-single delta) and the calibration heatmap with stale-entry flags
+- [x] 7.6 Build the benchmark/proof UI view (orchestrator-vs-single delta) and the calibration heatmap with stale-entry flags
 
 ## 8. End-to-end validation and hardening
 
 - [x] 8.1 End-to-end test demonstrating Baseline A on at least one verifiable task type (orchestrator ≥ best single worker)
 - [x] 8.2 Security pass on the `code_exec` sandbox boundary and the secrets store (no key leakage, no out-of-sandbox execution)
 - [x] 8.3 Persistence cutover to SQLite for calibration + traces once measurement lands
-- [ ] 8.4 Write README/usage docs: local setup, registering backends (incl. `claude setup-token`), and reading the proof view
+- [x] 8.4 Write README/usage docs: local setup, registering backends (incl. `claude setup-token`), and reading the proof view

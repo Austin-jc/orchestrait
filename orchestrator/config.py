@@ -35,15 +35,23 @@ class Config(BaseModel):
     prices: dict[str, dict[str, float]] = Field(default_factory=dict)
 
 
+WORKERS_OVERRIDE = Path("data/workers.json")
+
+
 def load_config(path: str | Path = "config.yaml") -> Config:
     p = Path(path)
-    if not p.exists():
-        return Config()
-    raw = yaml.safe_load(p.read_text()) or {}
+    raw = yaml.safe_load(p.read_text()) if p.exists() else {}
+    raw = raw or {}
     conductor = (raw.get("conductor") or {}).get("worker_id", 0)
+    workers = raw.get("workers") or []
+    # The config UI persists worker edits here; prefer it when present.
+    if WORKERS_OVERRIDE.exists():
+        import json
+
+        workers = json.loads(WORKERS_OVERRIDE.read_text())
     return Config(
         defaults=Defaults(**(raw.get("defaults") or {})),
         conductor_worker_id=conductor,
-        workers=[WorkerSpec(**w) for w in (raw.get("workers") or [])],
+        workers=[WorkerSpec(**w) for w in workers],
         prices=raw.get("prices") or {},
     )
