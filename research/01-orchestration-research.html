@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Orchestra Problem — Research & Architectures in Agent Orchestration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F2F4F1; --paper-2:#E8EBE6; --panel:#FBFCFA;
+    --ink:#14171A; --slate:#586169; --faint:#838B90;
+    --hair:#D6DAD3; --hair-2:#C3C9C0;
+    --accent:#11695A; --accent-d:#0C4C41; --accent-soft:#DBEAE4; --accent-tint:#EAF2EF;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --serif:'Newsreader',Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--serif); font-size:19px; line-height:1.62;
+    -webkit-font-smoothing:antialiased; font-feature-settings:"kern" 1;
+  }
+  ::selection{background:var(--accent-soft)}
+
+  /* progress + header */
+  .progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:60;transition:width .08s linear}
+  .topbar{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper) 86%, transparent);backdrop-filter:saturate(1.2) blur(8px);border-bottom:1px solid var(--hair)}
+  .topbar .row{max-width:1080px;margin:0 auto;padding:13px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--slate)}
+  .brand b{color:var(--accent);font-weight:600}
+  .docnum{font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--faint)}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+  .col{max-width:720px;margin:0 auto}
+
+  /* hero */
+  .hero{padding:88px 0 54px;border-bottom:1px solid var(--hair)}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:26px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-tint)}
+  h1{font-family:var(--disp);font-weight:600;letter-spacing:-.02em;line-height:1.02;margin:0 0 22px;
+     font-size:clamp(40px,7vw,76px)}
+  h1 em{font-style:normal;color:var(--accent)}
+  .lede{font-size:clamp(20px,2.4vw,25px);line-height:1.5;color:#2c3137;max-width:30ch;font-weight:400}
+  .lede.wide{max-width:54ch}
+  .meta-row{margin-top:38px;display:flex;flex-wrap:wrap;gap:10px}
+  .chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--slate);border:1px solid var(--hair-2);border-radius:2px;padding:6px 11px;background:var(--panel)}
+
+  /* hero diagram */
+  .heroviz{margin:46px auto 0;max-width:760px}
+  .heroviz svg{width:100%;height:auto;display:block}
+  .edge{stroke:var(--accent);stroke-width:1.6;fill:none;opacity:.85}
+  .node-c{fill:var(--panel);stroke:var(--ink);stroke-width:1.6}
+  .node-w{fill:var(--panel);stroke:var(--accent);stroke-width:1.6}
+  .node-f{fill:var(--accent);stroke:var(--accent-d);stroke-width:1.6}
+  .vlabel{font-family:var(--mono);font-size:11px;fill:var(--slate);letter-spacing:.04em}
+  .vlabel.on{fill:var(--accent-d)}
+  @media (prefers-reduced-motion:no-preference){
+    .draw{stroke-dasharray:240;stroke-dashoffset:240;animation:draw 1.1s ease forwards}
+    .draw.d2{animation-delay:.12s}.draw.d3{animation-delay:.24s}.draw.d4{animation-delay:.36s}
+    .draw.d5{animation-delay:.48s}.draw.d6{animation-delay:.6s}
+    .pop{opacity:0;animation:pop .5s ease forwards}
+    .pop.p1{animation-delay:.2s}.pop.p2{animation-delay:.4s}.pop.p3{animation-delay:.55s}.pop.p4{animation-delay:.7s}.pop.p5{animation-delay:.85s}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes pop{to{opacity:1}}
+  }
+
+  /* sections */
+  section{padding:60px 0;border-bottom:1px solid var(--hair)}
+  .snum{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+  .snum::before{content:"";width:26px;height:1px;background:var(--accent);display:inline-block}
+  h2{font-family:var(--disp);font-weight:500;letter-spacing:-.015em;font-size:clamp(27px,3.6vw,38px);line-height:1.1;margin:0 0 24px}
+  h3{font-family:var(--disp);font-weight:500;letter-spacing:-.01em;font-size:21px;margin:38px 0 10px;color:var(--ink)}
+  p{margin:0 0 18px}
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  a{color:var(--accent-d);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;text-decoration-color:var(--hair-2)}
+  a:hover{text-decoration-color:var(--accent)}
+  strong{font-weight:600}
+  em.term{font-style:italic;color:var(--accent-d)}
+  code{font-family:var(--mono);font-size:.82em;background:var(--accent-tint);padding:1.5px 6px;border-radius:3px;color:var(--accent-d)}
+
+  /* callouts */
+  .finding{border-left:2.5px solid var(--accent);background:var(--accent-tint);padding:20px 24px;margin:26px 0;border-radius:0 4px 4px 0}
+  .finding .tag{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-d);margin-bottom:8px;font-weight:600}
+  .finding p{margin:0;font-size:18px;line-height:1.55}
+  .note{border:1px solid var(--hair-2);background:var(--panel);padding:16px 20px;margin:24px 0;border-radius:4px;font-size:16.5px;color:var(--slate);line-height:1.55}
+  .note b{color:var(--ink)}
+
+  /* level list with node markers */
+  .levels{list-style:none;padding:0;margin:24px 0 6px;counter-reset:lv}
+  .levels li{position:relative;padding:0 0 26px 40px;border-left:1px solid var(--hair-2);margin-left:7px}
+  .levels li:last-child{border-left-color:transparent;padding-bottom:0}
+  .levels li::before{counter-increment:lv;content:counter(lv);position:absolute;left:-12px;top:-2px;width:23px;height:23px;border-radius:50%;background:var(--panel);border:1.5px solid var(--accent);color:var(--accent-d);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600}
+  .levels h4{font-family:var(--disp);font-weight:600;font-size:18px;margin:0 0 4px}
+  .levels p{margin:0;font-size:16.5px;color:var(--slate);line-height:1.5}
+  .levels .eff{font-family:var(--mono);font-size:12px;color:var(--accent-d);letter-spacing:.03em;margin-top:6px}
+
+  /* schema block */
+  pre.code{font-family:var(--mono);font-size:13.5px;line-height:1.7;background:var(--ink);color:#dfe6e3;padding:22px 24px;border-radius:6px;overflow-x:auto;margin:24px 0;letter-spacing:.01em}
+  pre.code .k{color:#8fd4c4}.c{color:#7f8a86}.s{color:#e3c08a}
+
+  /* table */
+  .tablewrap{overflow-x:auto;margin:26px 0;border:1px solid var(--hair-2);border-radius:6px}
+  table{border-collapse:collapse;width:100%;min-width:680px;font-family:var(--serif)}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--hair);vertical-align:top;font-size:15.5px;line-height:1.45}
+  thead th{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent-d);background:var(--accent-tint);font-weight:600;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child{font-family:var(--disp);font-weight:600;font-size:15px;white-space:nowrap;color:var(--ink)}
+  .pro{color:var(--accent-d)} .con{color:#9a5a2e}
+
+  /* dial */
+  .dial{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--hair-2);border:1px solid var(--hair-2);border-radius:6px;overflow:hidden;margin:28px 0}
+  .dial .cell{background:var(--panel);padding:20px 18px}
+  .dial .cell .lab{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .dial .cell h4{font-family:var(--disp);font-weight:600;font-size:17px;margin:0 0 7px}
+  .dial .cell p{margin:0;font-size:14.5px;line-height:1.5;color:var(--slate)}
+  .barrow{display:flex;gap:4px;margin-top:14px}
+  .barrow span{height:5px;flex:1;background:var(--hair-2);border-radius:3px}
+  .l1 .barrow span:nth-child(1){background:var(--accent)}
+  .l2 .barrow span:nth-child(1),.l2 .barrow span:nth-child(2){background:var(--accent)}
+  .l3 .barrow span{background:var(--accent)}
+
+  /* references */
+  .refs{list-style:none;padding:0;margin:20px 0 0;counter-reset:rf}
+  .refs li{position:relative;padding:14px 0 14px 44px;border-bottom:1px solid var(--hair)}
+  .refs li:last-child{border-bottom:none}
+  .refs li::before{counter-increment:rf;content:"["counter(rf)"]";position:absolute;left:0;top:14px;font-family:var(--mono);font-size:12px;color:var(--accent)}
+  .refs .ttl{font-family:var(--disp);font-weight:500;font-size:16px;color:var(--ink)}
+  .refs .auth{font-size:15px;color:var(--slate);font-style:italic}
+  .refs .id{font-family:var(--mono);font-size:12px;color:var(--accent-d);letter-spacing:.03em}
+
+  footer{padding:46px 0 70px}
+  .foot{font-family:var(--mono);font-size:12.5px;letter-spacing:.05em;color:var(--faint);line-height:1.7}
+  .foot b{color:var(--accent)}
+
+  @media(max-width:640px){
+    body{font-size:17.5px}
+    .topbar .row{padding:11px 18px}
+    .wrap{padding:0 18px}
+    .hero{padding:54px 0 40px}
+    section{padding:46px 0}
+    .dial{grid-template-columns:1fr}
+    .meta-row .chip{font-size:10.5px}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+
+<div class="topbar"><div class="row">
+  <span class="brand"><b>◆</b>&nbsp; The Orchestra Problem</span>
+  <span class="docnum">DOC 01 / 02 · RESEARCH</span>
+</div></div>
+
+<header class="hero"><div class="wrap"><div class="col">
+  <div class="eyebrow"><span class="dot"></span> Field notes on agent orchestration</div>
+  <h1>One model to<br><em>command them all.</em></h1>
+  <p class="lede">What it actually takes to make a pool of models behave like a single, better one — and where the value really lives.</p>
+  <div class="meta-row">
+    <span class="chip">Sakana Fugu · Conductor · TRINITY</span>
+    <span class="chip">ReAct ↔ Plan-and-Execute ↔ ReWOO</span>
+    <span class="chip">router · workflow · learned</span>
+  </div>
+
+  <div class="heroviz">
+    <svg viewBox="0 0 760 250" role="img" aria-label="A single prompt enters a conductor, which delegates to specialist workers, then synthesizes one answer.">
+      <!-- edges in -->
+      <path class="edge draw" d="M70,125 H205"/>
+      <!-- conductor to workers -->
+      <path class="edge draw d2" d="M285,125 C330,125 340,55 405,55"/>
+      <path class="edge draw d3" d="M285,125 C335,125 345,125 405,125"/>
+      <path class="edge draw d4" d="M285,125 C330,125 340,195 405,195"/>
+      <!-- workers to synth -->
+      <path class="edge draw d5" d="M475,55 C540,55 545,125 600,125"/>
+      <path class="edge draw d5" d="M475,125 H600"/>
+      <path class="edge draw d6" d="M475,195 C540,195 545,125 600,125"/>
+      <!-- out -->
+      <path class="edge draw d6" d="M680,125 H732"/>
+      <!-- nodes -->
+      <circle class="node-w pop p1" cx="55" cy="125" r="15"/>
+      <rect class="node-c pop p1" x="207" y="103" width="78" height="44" rx="6"/>
+      <circle class="node-w pop p2" cx="440" cy="55" r="16"/>
+      <circle class="node-w pop p3" cx="440" cy="125" r="16"/>
+      <circle class="node-w pop p4" cx="440" cy="195" r="16"/>
+      <circle class="node-f pop p5" cx="640" cy="125" r="16"/>
+      <circle class="node-c pop p5" cx="746" cy="125" r="13"/>
+      <!-- labels -->
+      <text class="vlabel" x="55" y="160" text-anchor="middle">prompt</text>
+      <text class="vlabel on" x="246" y="93" text-anchor="middle">conductor</text>
+      <text class="vlabel" x="440" y="30" text-anchor="middle">worker · gpt</text>
+      <text class="vlabel" x="478" y="129" text-anchor="start">worker · claude</text>
+      <text class="vlabel" x="440" y="223" text-anchor="middle">worker · gemini</text>
+      <text class="vlabel on" x="640" y="160" text-anchor="middle">synthesize</text>
+      <text class="vlabel" x="746" y="160" text-anchor="middle">answer</text>
+    </svg>
+  </div>
+</div></div></header>
+
+<main class="wrap"><div class="col">
+
+  <section>
+    <div class="snum reveal">00 · The trigger</div>
+    <h2 class="reveal">A model of models, sold as one model</h2>
+    <p class="reveal">In June 2026, Sakana AI shipped <strong>Fugu</strong>: a multi-agent orchestration system delivered behind a single OpenAI-compatible endpoint. You send one request; internally a trained conductor decides whether to answer directly or assemble a team of specialist models — frontier APIs and open weights alike — and combine their work into one reply. Its top tier, Fugu Ultra, claims parity with Anthropic's Fable&nbsp;5 and Mythos Preview while sidestepping export-control exposure, the pitch being <em class="term">AI sovereignty</em> through swappable agents.</p>
+    <p class="reveal">Two caveats frame everything below. The benchmarks are vendor-reported, and a "beats Opus" result from a system that <em>calls</em> Opus and synthesizes is a model-of-models win, not a single-model one. But the architecture is real, and grounded in two ICLR&nbsp;2026 papers. This document is the reasoning we worked through to build our own — what the research says, which architectures exist, and what's worth copying.</p>
+    <div class="note reveal"><b>Naming.</b> Fugu's engine descends from two methods: <b>TRINITY</b>, a sub-20,000-parameter coordinator optimized by evolution, and the <b>Conductor</b>, a 7B model trained with reinforcement learning. The Conductor is the one with released code, released weights, and the headline results — so it anchors most of what follows.</p></div>
+  </section>
+
+  <section>
+    <div class="snum reveal">01 · The map</div>
+    <h2 class="reveal">Three levels of orchestrator</h2>
+    <p class="reveal">"Orchestrator" spans three genuinely different things. Only the third is a research artifact; the first two capture most of the practical value and need no training.</p>
+    <ul class="levels">
+      <li class="reveal"><h4>Router</h4><p>Classify the request, send it to the best single model. Heuristics, an embedding classifier, or a cheap LLM call. A gateway like LiteLLM normalizes providers behind one endpoint.</p><div class="eff">effort · a weekend</div></li>
+      <li class="reveal"><h4>Workflow orchestrator</h4><p>A plan → delegate → verify → synthesize loop. A controller decomposes the task, dispatches subtasks to workers, checks results, stitches an answer. LangGraph, CrewAI, or a hand-rolled state machine.</p><div class="eff">effort · a couple of weeks</div></li>
+      <li class="reveal"><h4>Learned orchestrator</h4><p>Train a small model to <em>emit</em> the coordination strategy. This is what the Conductor does, and where the difficulty — and the novelty — lives.</p><div class="eff">effort · a research project</div></li>
+    </ul>
+    <div class="finding reveal"><div class="tag">Steer</div><p>Unless training a router model is the actual point, a gateway plus a solid verify/synthesize loop reaches roughly 80% of what an orchestration product sells — on your own keys, shippable in weeks.</p></div>
+  </section>
+
+  <section>
+    <div class="snum reveal">02 · The Conductor, in depth</div>
+    <h2 class="reveal">A plan written as three lists</h2>
+    <p class="reveal">The Conductor's whole trick is that the coordination strategy is its <em>output</em>, emitted in a single completion before anything runs. After a chain-of-thought, it produces three index-aligned Python lists: which workers to call, what to ask each, and which earlier results each worker may see.</p>
+    <pre class="code reveal"><span class="c"># one completion → a complete, executable DAG</span>
+model_id   = [ <span class="s">2</span>, <span class="s">0</span> ]                    <span class="c"># which worker per step</span>
+subtasks   = [ <span class="s">"Devise an efficient algorithm…"</span>,
+               <span class="s">"Implement the algorithm in Python"</span> ]
+access_list = [ [], [<span class="s">"all"</span>] ]            <span class="c"># step-1 sees nothing; step-2 sees all prior</span></pre>
+    <p class="reveal">The <code>access_list</code> is the edge set: <code>"all"</code> wires a step to every prior message, <code>[]</code> runs it blind, an index list wires specific upstream steps. So the "tree" is really a DAG, and execution is just a loop — build each context from its access list, call the worker, store the result, return the last. Workers are passed as ordinal IDs (<code>Model 0, Model 1…</code>) so the planner explores capability rather than leaning on brand priors.</p>
+
+    <h3 class="reveal">How it's trained</h3>
+    <p class="reveal">Pure reinforcement learning, DeepSeek-R1 style. The reward is blunt: zero if the three lists can't be parsed, <code>1</code> if executing the workflow yields the correct answer, <code>0.5</code> if it's well-formed but wrong. GRPO does the rest — coordination strategy emerges from end-to-end reward, never hand-designed.</p>
+    <div class="tablewrap reveal">
+      <table>
+        <thead><tr><th>Ingredient</th><th>What the paper used</th></tr></thead>
+        <tbody>
+          <tr><td>Base model</td><td>Qwen2.5-7B (a 3B variant also works, slightly weaker)</td></tr>
+          <tr><td>Algorithm</td><td>GRPO · no KL penalty · no reference-model sync</td></tr>
+          <tr><td>Training data</td><td>960 verifiable problems (MATH500, MMLU, RLPR, LiveCodeBench v1)</td></tr>
+          <tr><td>Schedule</td><td>200 iterations · batch 256 (4 questions × 64 rollouts)</td></tr>
+          <tr><td>Workers</td><td>Gemini 2.5 Pro, Claude Sonnet 4, GPT-5 + open: DeepSeek-R1-32B, Gemma3-27B, Qwen3-32B</td></tr>
+          <tr><td>Compute</td><td>2 × NVIDIA H100 80GB</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="reveal">The shock is how cheap the <em>training</em> is — two GPUs, a thousand problems, hours of work — because the cost has moved elsewhere: into the worker-API bill during rollouts, the async workflow-execution harness wired into the RL loop, and the verifiers that grade each domain. Compute isn't the moat; the rollout plumbing and the graders are.</p>
+
+    <h3 class="reveal">What emerged</h3>
+    <p class="reveal">A 7B model coordinating bigger ones beat every individual worker and posted state-of-the-art numbers on LiveCodeBench and GPQA-Diamond. Two emergent behaviors matter for design: it became <strong>difficulty-adaptive</strong> — one or two steps for easy MMLU items, three or four for hard code generation — and it stayed frugal, averaging about three steps against a five-step budget with nothing regularizing it there. Allowed to call <em>itself</em> recursively, it gained a new test-time-scaling axis: read the first attempt, decide whether to revise.</p>
+  </section>
+
+  <section>
+    <div class="snum reveal">03 · Where the value actually is</div>
+    <h2 class="reveal">The ablations tell on the marketing</h2>
+    <p class="reveal">Three controlled cuts in the paper quietly relocate the value away from where you'd expect it.</p>
+    <div class="tablewrap reveal">
+      <table>
+        <thead><tr><th>The cut</th><th>What it isolates</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Fix all workers to GPT-5</td><td>Value of decomposition + prompt-engineering, with routing removed</td><td>Still beats raw GPT-5 (69.8 vs 68.6)</td></tr>
+          <tr><td>Remove subtask text</td><td>Value of tailored instructions vs bare model-selection</td><td>Drops everywhere, hardest on code (64→59)</td></tr>
+          <tr><td>Frontier model as conductor</td><td>Value of the trained weights vs the scaffold itself</td><td>Untrained Gemini-as-conductor ≈ 71.6 of the 75.6</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="reveal">Read together: routing is the <em>least</em> of the three things bundled inside the orchestrator. Decomposition and verification topology carry real weight on their own, and a frontier model dropped into a good scaffold captures most of the gain without any training at all.</p>
+    <div class="finding reveal"><div class="tag">What training uniquely buys</div><p>Calibration. The untrained conductors leaned on prior beliefs about who's good at what — and those priors were wrong (they didn't know Claude was weak at LiveCodeBench) with no feedback to fix it. RL replaces <em>guessed</em> competence with <em>measured</em> competence.</p></div>
+    <p class="reveal">Which reframes the whole "build vs train" question. The durable asset is neither the trained orchestrator nor a static "best-model-per-task" table — both rot the moment a model updates. The asset is the <strong>measurement apparatus</strong>: a harness that scores per-model, per-subtask success on verifiable problems. That's renewable, and it's the thing worth building.</p>
+    <div class="note reveal"><b>Two loops, kept separate.</b> The <b>runtime loop</b> answers a request. The <b>measurement loop</b> runs offline, scoring who wins each task so the runtime's "assign to a fitting model" step is calibrated rather than guessed. Conflating them is the common mistake.</p>
+  </section>
+
+  <section>
+    <div class="snum reveal">04 · The architecture families</div>
+    <h2 class="reveal">When does the plan get made?</h2>
+    <p class="reveal">Every agent architecture is an answer to three questions: <em>when</em> does it plan (before, during, or never), <em>how many</em> model calls per task, and <em>how</em> it handles failure. The Conductor is a plan-up-front design; its main rival plans step-by-step. Here is the field.</p>
+    <div class="tablewrap reveal">
+      <table>
+        <thead><tr><th>Pattern</th><th>Mechanism</th><th>Plans</th><th>Strength</th><th>Weakness</th></tr></thead>
+        <tbody>
+          <tr><td>ReAct</td><td>Think → act → observe → repeat, one step at a time</td><td>During</td><td class="pro">Adaptive; recovers from surprises</td><td class="con">Myopic; cost grows; can loop or drift</td></tr>
+          <tr><td>Plan-and-Execute</td><td>Plan all steps up front, execute sequentially, replan on failure</td><td>Before</td><td class="pro">Fewer calls; inspectable before running</td><td class="con">Rigid to unexpected intermediate results</td></tr>
+          <tr><td>ReWOO</td><td>Plan once with placeholders, run tools, synthesize at the end</td><td>Before</td><td class="pro">~2 calls total; ~5× token efficiency</td><td class="con">Breaks on an unexpected tool return</td></tr>
+          <tr><td>LLMCompiler</td><td>Emit a DAG of tasks, execute independent branches in parallel</td><td>Before</td><td class="pro">Latency + cost via parallelism</td><td class="con">Up-front DAG must be largely correct</td></tr>
+          <tr><td>ADaPT</td><td>Plan up front, recursively decompose a step <em>only</em> when it fails</td><td>Hybrid</td><td class="pro">Adapts exactly where needed</td><td class="con">Needs a reliable per-step failure signal</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="reveal">The Conductor sits between ReWOO and LLMCompiler — a one-shot DAG with controlled visibility — with recursion as a coarse, whole-plan replan. ADaPT is the principled version of that recursion: keep the up-front DAG, but let a failing step spawn its own sub-plan instead of re-running everything.</p>
+    <div class="finding reveal"><div class="tag">The consistent trade — not a winner</div><p>Up-front planning wins on cost, inspectability, and parallelism but is rigid. Step-by-step (ReAct) wins on robustness in unpredictable environments but is myopic and expensive. The evidence on raw success rate is domain-dependent — one mobility benchmark gave ReAct a higher pass rate at a clear efficiency cost — so resist any universal claim.</p></div>
+    <p class="reveal">What the frontier deep-research systems landed on is telling: <strong>both</strong> — a high-level up-front plan with local adaptive loops. That hybrid is the design worth stealing.</p>
+  </section>
+
+  <section>
+    <div class="snum reveal">05 · The synthesis</div>
+    <h2 class="reveal">The three aren't modes. They're a dial.</h2>
+    <p class="reveal">Single-pass DAG, recursive replan, and ReAct aren't a menu to choose from — they're low, medium, and high settings on one axis: <em class="term">how much adaptivity per unit of work</em>. Seeing them this way dissolves the "pick a mode" problem, because a plan's <em>shape</em> already encodes its setting.</p>
+    <div class="dial reveal">
+      <div class="cell l1"><div class="lab"><span>◦</span> low</div><h4>Single-pass DAG</h4><p>A flat plan, executed once. Cheapest, most inspectable. Right for tasks whose structure is knowable in advance.</p><div class="barrow"><span></span><span></span><span></span></div></div>
+      <div class="cell l2"><div class="lab"><span>◑</span> medium</div><h4>Replan on failure</h4><p>A step that fails its verifier spawns a local sub-plan. Adaptivity exactly where the evidence says it's needed.</p><div class="barrow"><span></span><span></span><span></span></div></div>
+      <div class="cell l3"><div class="lab"><span>●</span> high</div><h4>Scoped self-loop</h4><p>A step observes, then decides — ReAct, but confined to the one piece that needs it, not the whole task.</p><div class="barrow"><span></span><span></span><span></span></div></div>
+    </div>
+    <p class="reveal">The Conductor already does an embryonic version of this — allocating more steps to harder problems entirely on its own. Difficulty-adaptive behavior is mode-selection emerging from reward, in miniature. The proposed system (Doc&nbsp;02) just widens the output language so the same emergent selection can reach further up the dial — and adds the two things that keep a dial from running away: <strong>hard budgets</strong> and <strong>verifiers as the trigger</strong>.</p>
+  </section>
+
+  <section>
+    <div class="snum reveal">06 · Sources</div>
+    <h2 class="reveal">References</h2>
+    <ul class="refs">
+      <li class="reveal"><span class="ttl">Learning to Orchestrate Agents in Natural Language with the Conductor.</span> <span class="auth">Nielsen, Cetin, Schwendeman, Sun, Xu, Tang — ICLR 2026.</span> <span class="id">arXiv:2512.04388</span></li>
+      <li class="reveal"><span class="ttl">TRINITY: An Evolved LLM Coordinator.</span> <span class="auth">Xu, Sun, Schwendeman, Nielsen, Cetin, Tang — ICLR 2026.</span> <span class="id">arXiv:2512.04695</span></li>
+      <li class="reveal"><span class="ttl">Sakana Fugu: A Multi-Agent Orchestration System as a Foundation Model.</span> <span class="auth">Sakana AI — product release, June 2026.</span> <span class="id">sakana.ai/fugu</span></li>
+      <li class="reveal"><span class="ttl">ReAct: Synergizing Reasoning and Acting in Language Models.</span> <span class="auth">Yao et al.</span> <span class="id">arXiv:2210.03629</span></li>
+      <li class="reveal"><span class="ttl">ReWOO: Decoupling Reasoning from Observations for Efficient Augmented Language Models.</span> <span class="auth">Xu et al., 2023.</span> <span class="id">arXiv:2305.18323</span></li>
+      <li class="reveal"><span class="ttl">Plan-and-Solve Prompting.</span> <span class="auth">Wang et al. — ACL 2023.</span></li>
+      <li class="reveal"><span class="ttl">An LLM Compiler for Parallel Function Calling (LLMCompiler).</span> <span class="auth">Kim et al., 2023.</span></li>
+      <li class="reveal"><span class="ttl">ADaPT: As-Needed Decomposition and Planning with Language Models.</span> <span class="auth">Prasad et al., 2024.</span></li>
+      <li class="reveal"><span class="ttl">Mixture-of-Agents Enhances Large Language Model Capabilities.</span> <span class="auth">Wang et al., 2024.</span> <span class="auth"> — the flat fan-out baseline the Conductor outperforms.</span></li>
+    </ul>
+  </section>
+
+</div></main>
+
+<footer class="wrap"><div class="col">
+  <p class="foot"><b>◆ THE ORCHESTRA PROBLEM</b><br>Document 01 of 02 — Research &amp; architectures.<br>Companion: <b>Doc 02 — Proposed Architecture: the adaptivity-dial orchestrator.</b><br>Benchmark figures are vendor-reported; treat as claims pending independent reproduction.</p>
+</div></footer>
+
+<script>
+  // reading progress
+  const prog=document.getElementById('prog');
+  const onScroll=()=>{const h=document.documentElement;const sc=h.scrollTop/(h.scrollHeight-h.clientHeight);prog.style.width=(sc*100)+'%';};
+  document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+  // reveal
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orchestrate, or Just Use Claude Code? — A Decision Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F2F4F1; --paper-2:#E8EBE6; --panel:#FBFCFA;
+    --ink:#14171A; --slate:#586169; --faint:#838B90;
+    --hair:#D6DAD3; --hair-2:#C3C9C0;
+    --accent:#11695A; --accent-d:#0C4C41; --accent-soft:#DBEAE4; --accent-tint:#EAF2EF;
+    --warn:#9a5a2e; --warn-tint:#F3E7DC;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --serif:'Newsreader',Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);font-size:19px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--accent-soft)}
+  .progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:60;transition:width .08s linear}
+  .topbar{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper) 86%, transparent);backdrop-filter:saturate(1.2) blur(8px);border-bottom:1px solid var(--hair)}
+  .topbar .row{max-width:1080px;margin:0 auto;padding:13px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--slate)}
+  .brand b{color:var(--accent);font-weight:600}
+  .docnum{font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--faint)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+  .col{max-width:720px;margin:0 auto}
+
+  .hero{padding:84px 0 52px;border-bottom:1px solid var(--hair)}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:26px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-tint)}
+  h1{font-family:var(--disp);font-weight:600;letter-spacing:-.02em;line-height:1.03;margin:0 0 22px;font-size:clamp(36px,6vw,66px)}
+  h1 em{font-style:normal;color:var(--accent)}
+  .lede{font-size:clamp(20px,2.4vw,25px);line-height:1.5;color:#2c3137;max-width:46ch;font-weight:400}
+  .meta-row{margin-top:34px;display:flex;flex-wrap:wrap;gap:10px}
+  .chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--slate);border:1px solid var(--hair-2);border-radius:2px;padding:6px 11px;background:var(--panel)}
+
+  /* quadrant */
+  .quadwrap{margin:44px auto 0;max-width:600px}
+  .quadwrap svg{width:100%;height:auto;display:block}
+  .qfill-a{fill:var(--accent-tint)} .qfill-b{fill:#fff} .qfill-c{fill:var(--paper-2)} .qfill-d{fill:var(--warn-tint)}
+  .qline{stroke:var(--ink);stroke-width:1.4}
+  .qgrid{stroke:var(--hair-2);stroke-width:1}
+  .qaxis{font-family:var(--mono);font-size:11px;fill:var(--slate);letter-spacing:.05em}
+  .qhead{font-family:var(--disp);font-size:13px;font-weight:600;fill:var(--ink)}
+  .qhead.on{fill:var(--accent-d)}
+  .qsub{font-family:var(--mono);font-size:9.5px;fill:var(--slate)}
+  .qpin{fill:var(--accent);stroke:#fff;stroke-width:1.5}
+  .qpin-w{fill:var(--warn);stroke:#fff;stroke-width:1.5}
+  .qpinlab{font-family:var(--mono);font-size:9.5px;fill:var(--ink)}
+
+  section{padding:58px 0;border-bottom:1px solid var(--hair)}
+  .snum{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+  .snum::before{content:"";width:26px;height:1px;background:var(--accent);display:inline-block}
+  h2{font-family:var(--disp);font-weight:500;letter-spacing:-.015em;font-size:clamp(26px,3.5vw,37px);line-height:1.1;margin:0 0 24px}
+  h3{font-family:var(--disp);font-weight:500;letter-spacing:-.01em;font-size:20px;margin:34px 0 10px}
+  p{margin:0 0 18px}
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  strong{font-weight:600}
+  em.term{font-style:italic;color:var(--accent-d)}
+  code{font-family:var(--mono);font-size:.82em;background:var(--accent-tint);padding:1.5px 6px;border-radius:3px;color:var(--accent-d)}
+
+  /* pillar list */
+  .pillars{list-style:none;padding:0;margin:24px 0}
+  .pillars li{display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--hair)}
+  .pillars li:last-child{border-bottom:none}
+  .pillars .status{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:3px;white-space:nowrap;margin-top:2px;font-weight:600}
+  .pillars .dies{background:var(--warn-tint);color:var(--warn)}
+  .pillars .lives{background:var(--accent-tint);color:var(--accent-d)}
+  .pillars h4{font-family:var(--disp);font-weight:600;font-size:17px;margin:0 0 3px}
+  .pillars p{margin:0;font-size:16px;color:var(--slate);line-height:1.5}
+
+  .tablewrap{overflow-x:auto;margin:26px 0;border:1px solid var(--hair-2);border-radius:6px}
+  table{border-collapse:collapse;width:100%;min-width:640px}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--hair);vertical-align:top;font-size:15px;line-height:1.45}
+  thead th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-d);background:var(--accent-tint);font-weight:600}
+  thead th:nth-child(2){color:var(--ink)} thead th:nth-child(3){color:var(--ink)}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child{font-family:var(--disp);font-weight:600;font-size:14.5px;color:var(--ink);white-space:nowrap}
+  .yes{color:var(--accent-d);font-weight:600} .no{color:var(--warn)}
+
+  /* versus columns */
+  .versus{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:26px 0}
+  .versus .vcol{border:1px solid var(--hair-2);border-radius:8px;padding:20px;background:var(--panel)}
+  .versus .vcol.a{border-top:3px solid var(--accent)}
+  .versus .vcol.b{border-top:3px solid var(--slate)}
+  .versus .vcol h4{font-family:var(--disp);font-weight:600;font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .versus .vcol h4 .t{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:500}
+  .versus ul{list-style:none;padding:0;margin:0}
+  .versus li{position:relative;padding:7px 0 7px 20px;font-size:15px;line-height:1.45;color:#33383d;border-bottom:1px solid var(--hair)}
+  .versus li:last-child{border-bottom:none}
+  .versus li::before{content:"▸";position:absolute;left:0;top:7px;color:var(--accent);font-size:12px}
+  .versus .b li::before{color:var(--slate)}
+
+  .decision{border:1px solid var(--hair-2);border-left:2.5px solid var(--accent);background:var(--accent-tint);padding:20px 24px;margin:26px 0;border-radius:0 5px 5px 0}
+  .decision .tag{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-d);margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .decision p{margin:0;font-size:18px;line-height:1.55}
+  .warnbox{border:1px solid #e0c9b3;border-left:2.5px solid var(--warn);background:var(--warn-tint);padding:18px 22px;margin:24px 0;border-radius:0 5px 5px 0}
+  .warnbox .tag{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--warn);margin-bottom:8px;font-weight:600}
+  .warnbox p{margin:0;font-size:16.5px;line-height:1.55;color:#4a3322}
+
+  /* three-way buy/build/use */
+  .threeway{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--hair-2);border:1px solid var(--hair-2);border-radius:8px;overflow:hidden;margin:28px 0}
+  .threeway .t3{background:var(--panel);padding:20px 18px}
+  .threeway .t3 .lab{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:600}
+  .threeway .t3 h4{font-family:var(--disp);font-weight:600;font-size:17px;margin:0 0 8px}
+  .threeway .t3 p{margin:0;font-size:14px;line-height:1.5;color:var(--slate)}
+  .threeway .t3 .for{margin-top:12px;font-family:var(--mono);font-size:11px;color:var(--accent-d);letter-spacing:.02em}
+
+  /* decision rule */
+  .rules{list-style:none;padding:0;margin:24px 0}
+  .rules li{padding:16px 20px;border:1px solid var(--hair-2);border-radius:6px;margin-bottom:12px;background:var(--panel);font-size:16.5px;line-height:1.5}
+  .rules li b{font-family:var(--disp);color:var(--ink)}
+  .rules .if{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px;font-weight:600}
+  .rules li.cc .if{color:var(--warn)}
+
+  .verdict{background:var(--ink);color:#e7ece9;border-radius:10px;padding:30px 30px;margin:30px 0}
+  .verdict .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7fd0bf;margin-bottom:12px}
+  .verdict p{margin:0;font-size:19px;line-height:1.55;font-family:var(--serif)}
+  .verdict strong{color:#fff}
+
+  footer{padding:46px 0 70px}
+  .foot{font-family:var(--mono);font-size:12.5px;letter-spacing:.05em;color:var(--faint);line-height:1.7}
+  .foot b{color:var(--accent)}
+
+  @media(max-width:640px){
+    body{font-size:17.5px}
+    .topbar .row{padding:11px 18px}.wrap{padding:0 18px}
+    .hero{padding:52px 0 38px}section{padding:44px 0}
+    .versus,.threeway{grid-template-columns:1fr}
+    .pillars li{flex-direction:column;gap:8px}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+
+<div class="topbar"><div class="row">
+  <span class="brand"><b>◆</b>&nbsp; Orchestrate, or use Claude Code?</span>
+  <span class="docnum">DECISION BRIEF · COMPANION</span>
+</div></div>
+
+<header class="hero"><div class="wrap"><div class="col">
+  <div class="eyebrow"><span class="dot"></span> A decision brief</div>
+  <h1>Orchestrate, or just<br><em>use Claude Code?</em></h1>
+  <p class="lede">Build-your-own orchestration and Sakana Fugu both bet on a model-of-models. Claude Code's workflows bet on one well-integrated model. The right call hinges on two variables — not on which sounds more sophisticated.</p>
+  <div class="meta-row">
+    <span class="chip">pool diversity × control needs</span>
+    <span class="chip">the Opus-only case</span>
+    <span class="chip">buy · build · use</span>
+  </div>
+
+  <div class="quadwrap">
+    <svg viewBox="0 0 600 540" role="img" aria-label="A 2x2 decision matrix. X axis is model pool from one model to many models. Y axis is need for deterministic control, budgets, and owned eval, from low to high. Quadrants recommend: bottom-left use Claude Code; top-left build a verify-and-budget harness; bottom-right orchestrate for routing; top-right build the full orchestrator.">
+      <!-- quadrant fills -->
+      <rect class="qfill-d" x="70" y="60" width="230" height="190"/>     <!-- top-left -->
+      <rect class="qfill-a" x="300" y="60" width="230" height="190"/>    <!-- top-right -->
+      <rect class="qfill-c" x="70" y="250" width="230" height="190"/>    <!-- bottom-left -->
+      <rect class="qfill-b" x="300" y="250" width="230" height="190"/>   <!-- bottom-right -->
+      <!-- grid + axes -->
+      <line class="qgrid" x1="300" y1="60" x2="300" y2="440"/>
+      <line class="qgrid" x1="70" y1="250" x2="530" y2="250"/>
+      <line class="qline" x1="70" y1="60" x2="70" y2="440"/>
+      <line class="qline" x1="70" y1="440" x2="530" y2="440"/>
+      <!-- axis labels -->
+      <text class="qaxis" x="300" y="468" text-anchor="middle">MODEL POOL →</text>
+      <text class="qaxis" x="120" y="486" text-anchor="middle">one model</text>
+      <text class="qaxis" x="480" y="486" text-anchor="middle">many models / providers</text>
+      <text class="qaxis" x="48" y="250" text-anchor="middle" transform="rotate(-90 48 250)">NEED FOR CONTROL · BUDGETS · OWNED EVAL →</text>
+      <!-- quadrant headers -->
+      <text class="qhead" x="185" y="92" text-anchor="middle">Build a verify +</text>
+      <text class="qhead" x="185" y="109" text-anchor="middle">budget harness</text>
+      <text class="qsub" x="185" y="128" text-anchor="middle">single model, but you need</text>
+      <text class="qsub" x="185" y="141" text-anchor="middle">deterministic, audited control</text>
+
+      <text class="qhead on" x="415" y="92" text-anchor="middle">Build the full</text>
+      <text class="qhead on" x="415" y="109" text-anchor="middle">orchestrator</text>
+      <text class="qsub" x="415" y="128" text-anchor="middle">both pillars on:</text>
+      <text class="qsub" x="415" y="141" text-anchor="middle">routing + gated control</text>
+
+      <text class="qhead" x="185" y="300" text-anchor="middle">Use Claude Code</text>
+      <text class="qhead" x="185" y="317" text-anchor="middle">workflows</text>
+      <text class="qsub" x="185" y="336" text-anchor="middle">orchestration buys little;</text>
+      <text class="qsub" x="185" y="349" text-anchor="middle">integration wins</text>
+
+      <text class="qhead" x="415" y="300" text-anchor="middle">Orchestrate</text>
+      <text class="qhead" x="415" y="317" text-anchor="middle">for routing</text>
+      <text class="qsub" x="415" y="336" text-anchor="middle">frontier-planner or Fugu;</text>
+      <text class="qsub" x="415" y="349" text-anchor="middle">lighter on verification</text>
+
+      <!-- pins -->
+      <circle class="qpin-w" cx="150" cy="180" r="6"/>
+      <text class="qpinlab" x="150" y="205" text-anchor="middle">Opus-only · regulated</text>
+      <circle class="qpin" cx="175" cy="380" r="6"/>
+      <text class="qpinlab" x="175" y="405" text-anchor="middle">Opus-only · coding</text>
+      <circle class="qpin" cx="450" cy="130" r="6"/>
+      <text class="qpinlab" x="450" y="170" text-anchor="middle">multi-vendor · agentic</text>
+    </svg>
+  </div>
+</div></div></header>
+
+<main class="wrap"><div class="col">
+
+  <section>
+    <div class="snum reveal">00 · The frame</div>
+    <h2 class="reveal">It isn't "smarter vs simpler"</h2>
+    <p class="reveal">Orchestration's headline result — a model-of-models beating a single frontier model — came almost entirely from <strong>heterogeneity</strong>: routing each task to whichever model is strongest at it, winning because none is strongest everywhere. Strip the diversity and you strip the engine. So the comparison with Claude Code's workflows isn't abstract; it turns on whether your situation keeps that engine running.</p>
+    <p class="reveal">Two variables decide it. <strong>Pool diversity</strong> — do you have many models or one — governs whether routing has any value at all. <strong>Control needs</strong> — do you require deterministic verification, hard budgets, and owned eval data — governs whether the framework's <em>other</em> properties justify it even when routing doesn't. The matrix above is the whole brief in one picture; the sections below show the work.</p>
+  </section>
+
+  <section>
+    <div class="snum reveal">01 · What survives a single model</div>
+    <h2 class="reveal">Three pillars, only some load-bearing alone</h2>
+    <p class="reveal">"Orchestration" bundles three distinct things. When the pool collapses to one model, they don't fail equally — and knowing which survive tells you exactly what you'd still be buying.</p>
+    <ul class="pillars">
+      <li class="reveal"><span class="status dies">dies</span><div><h4>Routing — "best model for this task"</h4><p>Zero value by construction with one model. The Conductor's fix-everything-to-one-model ablation saw task-specific gains collapse to roughly nothing where that model already dominated.</p></div></li>
+      <li class="reveal"><span class="status lives">survives</span><div><h4>Decomposition</h4><p>Splitting a task into focused subtasks, each solved in clean context. Independent of pool diversity.</p></div></li>
+      <li class="reveal"><span class="status lives">survives</span><div><h4>Tailored prompting</h4><p>A sharp, purpose-written instruction per subtask. The same ablation still edged past the raw model largely on this.</p></div></li>
+      <li class="reveal"><span class="status lives">survives</span><div><h4>Verification topology</h4><p>A separate checking pass with controlled visibility before synthesis. Survives — and is the basis of any single-model edge.</p></div></li>
+    </ul>
+    <div class="warnbox reveal"><div class="tag">⚠ The catch</div><p>Claude Code's workflows <strong>already do</strong> decomposition, subagents in fresh context, and orchestration. So with one model, the surviving pillars are mostly things Claude Code provides too. The honest residual you'd be adding is narrower than it first looks — and it's about <em>how</em> control is exercised, not whether tasks get split up.</p></div>
+  </section>
+
+  <section>
+    <div class="snum reveal">02 · Head to head</div>
+    <h2 class="reveal">Framework vs Claude Code workflows</h2>
+    <div class="tablewrap reveal">
+      <table>
+        <thead><tr><th>Dimension</th><th>Orchestration framework</th><th>Claude Code workflows</th></tr></thead>
+        <tbody>
+          <tr><td>Model pool</td><td>Any provider; heterogeneous by design</td><td class="no">Claude-only</td></tr>
+          <tr><td>Routing value</td><td class="yes">High with a diverse pool</td><td>N/A (single vendor)</td></tr>
+          <tr><td>"Is this step done?"</td><td class="yes">Deterministic external verifier</td><td>Model self-assessment</td></tr>
+          <tr><td>Budgets</td><td class="yes">Hard, central ceiling per run</td><td>Softer; loops can wander</td></tr>
+          <tr><td>Eval / calibration data</td><td class="yes">Owned, accumulating, queryable</td><td>Not a first-class artifact</td></tr>
+          <tr><td>Tool / editor integration</td><td class="no">You build it</td><td class="yes">Deep, native, tuned</td></tr>
+          <tr><td>General coding quality</td><td>Good</td><td class="yes">Purpose-built, hard-tuned</td></tr>
+          <tr><td>Setup cost</td><td class="no">Real (build + serve workers)</td><td class="yes">Near-zero</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="reveal">The pattern: the framework wins on <em>governance and breadth</em> — many models, deterministic control, hard budgets, owned data. Claude Code wins on <em>integration and immediacy</em> — it's already wired into your editor, tools, and filesystem, with a loop Anthropic has tuned hard, at essentially no setup.</p>
+  </section>
+
+  <section>
+    <div class="snum reveal">03 · What only each can do</div>
+    <h2 class="reveal">The non-overlapping edges</h2>
+    <div class="versus reveal">
+      <div class="vcol a">
+        <h4>Orchestration framework <span class="t">only here</span></h4>
+        <ul>
+          <li>Route across providers — the moment you add a non-Claude model, routing value switches back on</li>
+          <li>Gate progress on a real verifier (code execution, math equivalence) rather than the model's own judgment</li>
+          <li>Enforce a hard spend/depth/time ceiling no step can escape</li>
+          <li>Accumulate verified pass/fail as an owned dataset — regression detection, "did the new model improve at X"</li>
+          <li>Survive single-vendor disruption by swapping the pool</li>
+        </ul>
+      </div>
+      <div class="vcol b">
+        <h4>Claude Code workflows <span class="t">only here</span></h4>
+        <ul>
+          <li>Native filesystem, editor, terminal, and tool access out of the box</li>
+          <li>A coding loop tuned by the people who built the model</li>
+          <li>Zero infrastructure — no worker serving, no gateway, no verifier sandbox to maintain</li>
+          <li>Immediate; nothing to design before you're productive</li>
+          <li>Subagents and context management handled for you</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="snum reveal">04 · The Opus-only verdict</div>
+    <h2 class="reveal">When the pool is one model</h2>
+    <p class="reveal">Run the subtraction honestly. Routing value → zero. Decomposition and subagents → Claude Code already does them. What's left that's genuinely yours is the <em>control character</em>: verifier-gated progress instead of self-assessment, hard budgets, and owned calibration. Whether that's worth a framework depends entirely on whether you need those three as first-class properties.</p>
+    <div class="verdict reveal">
+      <div class="tag">◆ Honest verdict</div>
+      <p>With <strong>Opus-only</strong> and <strong>general coding</strong>, Claude Code's workflows will likely win or tie — it's integrated, tuned, and the framework's defining advantage (heterogeneous routing) is switched off. <strong>Don't build it for that case.</strong> Build it when you have verifiable <em>non-coding</em> tasks needing deterministic control, when hard budgets and owned eval data are operational requirements, or — the decisive one — when you intend to run a <strong>multi-model pool</strong>, at which point the whole premise re-activates.</p>
+    </div>
+    <p class="reveal">Put plainly: with only Opus, this framework is a verification-and-budgeting harness wrapped around Opus. Build it only if verification-and-budgeting is the thing you actually need.</p>
+  </section>
+
+  <section>
+    <div class="snum reveal">05 · Three postures</div>
+    <h2 class="reveal">Buy, build, or use what's integrated</h2>
+    <p class="reveal">It helps to see the three options as different postures rather than competitors on one axis.</p>
+    <div class="threeway reveal">
+      <div class="t3"><div class="lab">Buy</div><h4>Sakana Fugu</h4><p>Hosted, learned conductor over a multi-vendor pool behind one API. Sovereignty / export-risk pitch. Can't self-host; benchmarks are vendor-reported; routing is opaque.</p><div class="for">for · multi-model power, no build</div></div>
+      <div class="t3"><div class="lab">Build</div><h4>Your framework</h4><p>Frontier-planner orchestration you own end-to-end: your pool, your verifiers, your budgets, your calibration. Real setup cost; full control and provider-agnosticism.</p><div class="for">for · control + breadth + ownership</div></div>
+      <div class="t3"><div class="lab">Use</div><h4>Claude Code workflows</h4><p>Integrated, tuned, single-vendor. Near-zero setup, strong on coding, model-judged control. No routing, no owned eval.</p><div class="for">for · Claude-only, integrated work</div></div>
+    </div>
+    <p class="reveal">Fugu and your framework are the same bet at different build-cost points; Claude Code is a different bet entirely. The choice between the first two is buy-vs-build; the choice against Claude Code is the pool-diversity question above.</p>
+  </section>
+
+  <section>
+    <div class="snum reveal">06 · Decision rule</div>
+    <h2 class="reveal">If / then</h2>
+    <ul class="rules">
+      <li class="reveal cc"><span class="if">If · one model + general coding</span><b>Use Claude Code workflows.</b> Routing is off and Claude Code already does the rest, integrated and tuned. Building loses.</li>
+      <li class="reveal"><span class="if">If · one model + verifiable, governed pipeline</span><b>Build the framework as a verify + budget harness.</b> Worth it when deterministic control, hard budgets, and audit/eval data are requirements — even single-model.</li>
+      <li class="reveal"><span class="if">If · many models + lighter control needs</span><b>Orchestrate for routing.</b> A frontier-planner framework, or buy Fugu. Routing is the engine; verification matters less here.</li>
+      <li class="reveal"><span class="if">If · many models + high control needs</span><b>Build the full orchestrator.</b> Both pillars active — routing and verifier-gated control. The strongest case for the design in Doc 02.</li>
+    </ul>
+    <div class="decision reveal"><div class="tag"><span>◆</span> The one-line test</div><p>Will your pool ever hold more than one kind of model? If yes, build toward orchestration now — routing returns the day you add the second model. If it's one model forever and the work is coding, Claude Code already has you covered.</p></div>
+  </section>
+
+</div></main>
+
+<footer class="wrap"><div class="col">
+  <p class="foot"><b>◆ DECISION BRIEF</b><br>Companion to Doc 01 (research) and Doc 02 (architecture).<br>The orchestration-beats-frontier story holds only with a heterogeneous pool;<br>single-model, it reduces to a verification-and-budgeting harness.</p>
+</div></footer>
+
+<script>
+  const prog=document.getElementById('prog');
+  const onScroll=()=>{const h=document.documentElement;const sc=h.scrollTop/(h.scrollHeight-h.clientHeight);prog.style.width=(sc*100)+'%';};
+  document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
