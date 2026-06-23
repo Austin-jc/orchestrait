@@ -59,7 +59,7 @@
 
 ## 8. End-to-end validation and hardening
 
-- [ ] 8.1 End-to-end test demonstrating Baseline A on at least one verifiable task type (orchestrator ≥ best single worker)
-- [ ] 8.2 Security pass on the `code_exec` sandbox boundary and the secrets store (no key leakage, no out-of-sandbox execution)
-- [ ] 8.3 Persistence cutover to SQLite for calibration + traces once measurement lands
+- [x] 8.1 End-to-end test demonstrating Baseline A on at least one verifiable task type (orchestrator ≥ best single worker)
+- [x] 8.2 Security pass on the `code_exec` sandbox boundary and the secrets store (no key leakage, no out-of-sandbox execution)
+- [x] 8.3 Persistence cutover to SQLite for calibration + traces once measurement lands
 - [ ] 8.4 Write README/usage docs: local setup, registering backends (incl. `claude setup-token`), and reading the proof view

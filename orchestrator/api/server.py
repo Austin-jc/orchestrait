@@ -12,15 +12,17 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 import uuid
 
 from pydantic import BaseModel, Field
 
-from ..calibration import CalibrationStore
+from ..calibration import SqliteCalibrationStore
 from ..config import load_config
 from ..events import EventBus
 from ..factory import build_orchestrator
 from ..measurement import evaluate, load_bank, measure
+from ..persistence import TraceStore
 from ..verify import default_registry
 
 
@@ -45,10 +47,13 @@ def create_app(orchestrator=None):
     from fastapi import FastAPI
     from fastapi.responses import JSONResponse, StreamingResponse
 
+    from fastapi import HTTPException
+
     app = FastAPI(title="Orchestrait", version="0.1.0")
-    orch = orchestrator or build_orchestrator(load_config())
+    store = SqliteCalibrationStore()
+    traces = TraceStore()
+    orch = orchestrator or build_orchestrator(load_config(), calibration=store)
     verifiers = default_registry()
-    store = CalibrationStore()
 
     @app.get("/health")
     async def health():
@@ -101,7 +106,21 @@ def create_app(orchestrator=None):
     @app.post("/run")
     async def run(body: RunRequest):
         answer = await orch.run(body.prompt)
-        return JSONResponse(answer.model_dump())
+        run_id = traces.save(answer, created_at=time.time())
+        payload = answer.model_dump()
+        payload["run_id"] = run_id
+        return JSONResponse(payload)
+
+    @app.get("/runs")
+    async def runs():
+        return {"runs": traces.list()}
+
+    @app.get("/runs/{run_id}")
+    async def get_run(run_id: str):
+        trace = traces.get(run_id)
+        if trace is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        return trace
 
     @app.post("/run/stream")
     async def run_stream(body: RunRequest):
