@@ -44,10 +44,20 @@ class Executor:
         enforcer: BudgetEnforcer,
         depth: int = 0,
         sink: list[StepResult] | None = None,
+        bus=None,
     ) -> list[StepResult]:
         results = sink if sink is not None else []
         for i, step in enumerate(plan.steps):
             enforcer.check()  # raises BudgetExceeded -> caller keeps partial `sink`
+            if bus:
+                await bus.emit(
+                    "step_started",
+                    index=i,
+                    worker_id=step.worker_id,
+                    subtask=step.subtask,
+                    primitive=step.primitive.value,
+                    access=step.access,
+                )
             context = build_context(prompt, step, results)
             adapter = self.registry.get(step.worker_id)
             # Subscription governance (D4): block a call that would push the
@@ -58,9 +68,13 @@ class Executor:
                     enforcer.budget.max_subscription_prompts,
                     enforcer.subscription_prompts + 1,
                 )
+            if bus:
+                await bus.emit("worker_call", index=i, worker_id=step.worker_id, kind=getattr(adapter.spec, "kind", ""))
             output, usage = await adapter.call(context, **self._cfg(step))
             enforcer.add_usage(usage)
-            results.append(
-                StepResult(index=i, worker_id=step.worker_id, output=output, usage=usage)
-            )
+            sr = StepResult(index=i, worker_id=step.worker_id, output=output, usage=usage)
+            results.append(sr)
+            if bus:
+                await bus.emit("step_done", result=sr.model_dump())
+                await bus.emit("budget_tick", totals=enforcer.totals())
         return results

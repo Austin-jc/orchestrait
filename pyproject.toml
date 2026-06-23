@@ -23,6 +23,7 @@ dev = ["pytest>=8", "pytest-asyncio>=0.23"]
 
 [project.scripts]
 orchestrait = "orchestrator.__main__:main"
+orchestrait-serve = "orchestrator.api.server:main"
 
 [tool.setuptools.packages.find]
 include = ["orchestrator*"]

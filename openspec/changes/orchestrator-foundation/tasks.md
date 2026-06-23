@@ -26,9 +26,9 @@
 
 ## 4. Observability and live event stream
 
-- [ ] 4.1 Define typed run events (`plan_ready`, `step_started`, `worker_call`, `verdict`, `escalation`, `budget_tick`, `step_done`, `synthesis`, `run_done`) and emit them from the executor at each decision point
-- [ ] 4.2 Assemble the serializable `RunTrace` (nested step results, totals, budget-hit flags) and prove it equals the replayed event log
-- [ ] 4.3 Implement the FastAPI server: OpenAI-compatible `POST /v1/chat/completions`, a run endpoint, and an SSE/WebSocket stream of run events
+- [x] 4.1 Define typed run events (`plan_ready`, `step_started`, `worker_call`, `verdict`, `escalation`, `budget_tick`, `step_done`, `synthesis`, `run_done`) and emit them from the executor at each decision point
+- [x] 4.2 Assemble the serializable `RunTrace` (nested step results, totals, budget-hit flags) and prove it equals the replayed event log
+- [x] 4.3 Implement the FastAPI server: OpenAI-compatible `POST /v1/chat/completions`, a run endpoint, and an SSE/WebSocket stream of run events
 
 ## 5. Visualizer UI — live run + configuration
 
