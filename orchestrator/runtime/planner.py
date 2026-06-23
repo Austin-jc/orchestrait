@@ -17,6 +17,8 @@ class Planner(Protocol):
         self, prompt: str, enforcer: BudgetEnforcer, calibration=None
     ) -> Plan: ...
 
+    async def replan(self, prompt: str, step, output: str, verdict, enforcer: BudgetEnforcer) -> Plan: ...
+
 
 # The opening line is also how the MockWorkerAdapter recognises a planning call.
 PLANNER_SYSTEM = """You are the planning conductor for a multi-model orchestrator.
@@ -25,13 +27,17 @@ Decompose the user's task into a short plan and return ONLY JSON matching this s
 {{
   "reasoning": str,
   "steps": [
-    {{"worker_id": int, "subtask": str, "access": [int]|"all", "primitive": "normal"}}
+    {{"worker_id": int, "subtask": str, "access": [int]|"all",
+      "primitive": "normal"|"replan", "verifier": str|null, "expected": str|null}}
   ],
   "budget": {{"max_spend_usd": float, "max_wall_seconds": float}}
 }}
 
 Workers (refer to them only by ordinal):
 {workers}
+
+Available verifiers: exact_match, math_equiv, code_exec (set `verifier` and
+`expected` when a step's correctness is automatically checkable).
 
 Rules:
 - Assess difficulty first. A single-step plan is fine for easy prompts. Reward frugality.
@@ -40,8 +46,27 @@ Rules:
 - Cost: prefer free/local workers for parallel breadth. Use a "subscription
   (scarce)" worker for at most one or two high-value steps; never fan many
   steps onto it.
-- In this version use ONLY the "normal" primitive.
+- Primitives: use "normal" by default. Use "replan" only for a step whose
+  correctness is checkable (it has a verifier) and may need a second attempt.
+  Do NOT use "react".
 - Return JSON only, no prose, no code fences.
+"""
+
+# Opening phrase recognised by the MockWorkerAdapter as a replan call.
+REPLAN_SYSTEM = """You are fixing a failed step in a plan.
+
+The subtask below failed its verifier. Produce a SHORT JSON plan (the same
+schema, "normal" steps only) that accomplishes JUST this subtask correctly.
+
+Workers (by ordinal):
+{workers}
+
+Failed subtask: {subtask}
+Verifier feedback: {detail}
+Previous (failed) output:
+{output}
+
+Return JSON only.
 """
 
 
@@ -95,3 +120,21 @@ class FrontierLLMPlanner:
             )
             enforcer.add_usage(usage2)
             return parse_plan(text2)
+
+    async def replan(self, prompt: str, step, output: str, verdict, enforcer: BudgetEnforcer) -> Plan:
+        system = REPLAN_SYSTEM.format(
+            workers=self.registry.describe_for_planner(),
+            subtask=step.subtask,
+            detail=verdict.detail,
+            output=(output or "")[:1000],
+        )
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+        enforcer.check()
+        text, usage = await self.conductor.call(
+            messages, max_tokens=self.max_tokens, temperature=self.temperature
+        )
+        enforcer.add_usage(usage)
+        return parse_plan(text)

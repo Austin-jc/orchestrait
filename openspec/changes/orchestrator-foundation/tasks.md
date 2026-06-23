@@ -40,13 +40,13 @@
 
 ## 6. Verifiers and escalation (the win mechanism)
 
-- [ ] 6.1 Implement the verifier registry and `Verdict`; resolve `step.verifier` by name on the execution path
-- [ ] 6.2 Implement `exact_match` and `math_equiv` (sympy/numeric) verifiers with fixture tests
-- [ ] 6.3 Implement `code_exec` behind a swappable sandbox boundary (subprocess + CPU/mem/time rlimits); verify containment of resource-exhausting code
-- [ ] 6.4 Implement the `replan` primitive (recursive sub-plan via `planner.replan`) with `max_depth` enforcement; escalate only on `verdict.failed`
-- [ ] 6.5 (Deferred, post-v1) `react` primitive (`react_loop`) — out of v1 scope per D11; keep it reserved in the schema and instruct the planner not to emit `react`
-- [ ] 6.6 Surface `escalation` events so the UI expands a failing `replan` node into an inline nested sub-graph
-- [ ] 6.7 Test that an unverified step never escalates and a verified failing step triggers exactly one replan within depth
+- [x] 6.1 Implement the verifier registry and `Verdict`; resolve `step.verifier` by name on the execution path
+- [x] 6.2 Implement `exact_match` and `math_equiv` (sympy/numeric) verifiers with fixture tests
+- [x] 6.3 Implement `code_exec` behind a swappable sandbox boundary (subprocess + CPU/mem/time rlimits); verify containment of resource-exhausting code
+- [x] 6.4 Implement the `replan` primitive (recursive sub-plan via `planner.replan`) with `max_depth` enforcement; escalate only on `verdict.failed`
+- [x] 6.5 (Deferred, post-v1) `react` primitive (`react_loop`) — out of v1 scope per D11; keep it reserved in the schema and instruct the planner not to emit `react`
+- [x] 6.6 Surface `escalation` events so the UI expands a failing `replan` node into an inline nested sub-graph
+- [x] 6.7 Test that an unverified step never escalates and a verified failing step triggers exactly one replan within depth
 
 ## 7. Measurement, calibration, and proof
 

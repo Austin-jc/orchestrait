@@ -10,6 +10,7 @@ import os
 from .config import Config
 from .runtime import DefaultSynthesizer, Executor, FrontierLLMPlanner, Orchestrator
 from .types import WorkerSpec
+from .verify import default_registry
 from .workers import (
     ClaudeSubscriptionAdapter,
     LiteLLMAdapter,
@@ -90,6 +91,12 @@ def build_orchestrator(config: Config) -> Orchestrator:
     conductor = registry.get(config.conductor_worker_id)
     d = config.defaults
     planner = FrontierLLMPlanner(conductor, registry, temperature=d.temperature, max_tokens=d.max_tokens)
-    executor = Executor(registry, max_tokens=d.max_tokens, temperature=d.temperature)
+    executor = Executor(
+        registry,
+        planner=planner,
+        verifiers=default_registry(),
+        max_tokens=d.max_tokens,
+        temperature=d.temperature,
+    )
     synthesizer = DefaultSynthesizer(adapter=conductor, max_tokens=d.max_tokens, temperature=d.temperature)
     return Orchestrator(registry, planner, executor, synthesizer, default_budget=d.budget)
