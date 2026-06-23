@@ -1,0 +1,11 @@
+{
+  "tasks": [
+    {"id": "math-1", "task_type": "math", "prompt": "Compute 17 * 23. Reply with just the number.", "verifier": "math_equiv", "expected": "391"},
+    {"id": "math-2", "task_type": "math", "prompt": "Compute 144 / 12. Reply with just the number.", "verifier": "math_equiv", "expected": "12"},
+    {"id": "math-3", "task_type": "math", "prompt": "What is 256 - 89? Reply with just the number.", "verifier": "math_equiv", "expected": "167"},
+    {"id": "mcq-1", "task_type": "mcq", "prompt": "Which number is prime? A) 4 B) 6 C) 7 D) 9. Reply with the letter.", "verifier": "exact_match", "expected": "C"},
+    {"id": "mcq-2", "task_type": "mcq", "prompt": "Capital of France? A) Rome B) Paris C) Berlin D) Madrid. Reply with the letter.", "verifier": "exact_match", "expected": "B"},
+    {"id": "code-1", "task_type": "code", "prompt": "Write a Python function add(a, b) that returns a + b.", "verifier": "code_exec", "expected": "specs/add_spec.py"},
+    {"id": "code-2", "task_type": "code", "prompt": "Write a Python function is_even(n) returning True iff n is even.", "verifier": "code_exec", "expected": "specs/is_even_spec.py"}
+  ]
+}

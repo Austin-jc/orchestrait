@@ -65,3 +65,9 @@ def test_workers_endpoint():
     r = _client().get("/workers")
     assert r.status_code == 200
     assert len(r.json()["workers"]) == 2
+
+
+def test_calibration_endpoint():
+    r = _client().get("/calibration")
+    assert r.status_code == 200
+    assert "entries" in r.json()

@@ -86,14 +86,17 @@ def parse_plan(text: str) -> Plan:
 
 
 class FrontierLLMPlanner:
-    def __init__(self, conductor, registry, *, max_tokens: int = 2048, temperature: float = 0.2) -> None:
+    def __init__(self, conductor, registry, *, calibration=None, max_tokens: int = 2048, temperature: float = 0.2) -> None:
         self.conductor = conductor
         self.registry = registry
+        self.calibration = calibration
         self.max_tokens = max_tokens
         self.temperature = temperature
 
     async def plan(self, prompt: str, enforcer: BudgetEnforcer, calibration=None) -> Plan:
-        system = PLANNER_SYSTEM.format(workers=self.registry.describe_for_planner(calibration))
+        system = PLANNER_SYSTEM.format(
+            workers=self.registry.describe_for_planner(calibration or self.calibration)
+        )
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},

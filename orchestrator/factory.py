@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import os
 
+from .calibration import CalibrationStore
 from .config import Config
 from .runtime import DefaultSynthesizer, Executor, FrontierLLMPlanner, Orchestrator
 from .types import WorkerSpec
@@ -79,7 +80,7 @@ def build_adapter(spec: WorkerSpec, *, config: Config, workers: list[WorkerSpec]
     raise ValueError(f"Unknown adapter kind '{spec.kind}'.")
 
 
-def build_orchestrator(config: Config) -> Orchestrator:
+def build_orchestrator(config: Config, calibration=None) -> Orchestrator:
     workers = config.workers
     if not workers:
         raise ValueError("No workers configured. Add a `workers:` list to config.yaml.")
@@ -90,7 +91,10 @@ def build_orchestrator(config: Config) -> Orchestrator:
     registry = WorkerRegistry(adapters)
     conductor = registry.get(config.conductor_worker_id)
     d = config.defaults
-    planner = FrontierLLMPlanner(conductor, registry, temperature=d.temperature, max_tokens=d.max_tokens)
+    calibration = calibration if calibration is not None else CalibrationStore()
+    planner = FrontierLLMPlanner(
+        conductor, registry, calibration=calibration, temperature=d.temperature, max_tokens=d.max_tokens
+    )
     executor = Executor(
         registry,
         planner=planner,

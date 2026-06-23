@@ -50,11 +50,11 @@
 
 ## 7. Measurement, calibration, and proof
 
-- [ ] 7.1 Build a small verifiable task bank (math, MCQ, code) under `tasks/` with graders
-- [ ] 7.2 Implement the offline measurement harness (per worker × task-type win-rate + avg cost), fully separate from the runtime path
-- [ ] 7.3 Implement the calibration store with TTL/freshness and worker-version-change invalidation
-- [ ] 7.4 Wire the planner to read calibration win-rates into its prompt (grounded assignment)
-- [ ] 7.5 Implement the eval/proof mode: orchestrator vs each single worker, anchored to Baseline A (same-model single-shot)
+- [x] 7.1 Build a small verifiable task bank (math, MCQ, code) under `tasks/` with graders
+- [x] 7.2 Implement the offline measurement harness (per worker × task-type win-rate + avg cost), fully separate from the runtime path
+- [x] 7.3 Implement the calibration store with TTL/freshness and worker-version-change invalidation
+- [x] 7.4 Wire the planner to read calibration win-rates into its prompt (grounded assignment)
+- [x] 7.5 Implement the eval/proof mode: orchestrator vs each single worker, anchored to Baseline A (same-model single-shot)
 - [ ] 7.6 Build the benchmark/proof UI view (orchestrator-vs-single delta) and the calibration heatmap with stale-entry flags
 
 ## 8. End-to-end validation and hardening

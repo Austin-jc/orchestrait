@@ -16,9 +16,12 @@ import uuid
 
 from pydantic import BaseModel, Field
 
+from ..calibration import CalibrationStore
 from ..config import load_config
 from ..events import EventBus
 from ..factory import build_orchestrator
+from ..measurement import evaluate, load_bank, measure
+from ..verify import default_registry
 
 
 class ChatRequest(BaseModel):
@@ -44,6 +47,8 @@ def create_app(orchestrator=None):
 
     app = FastAPI(title="Orchestrait", version="0.1.0")
     orch = orchestrator or build_orchestrator(load_config())
+    verifiers = default_registry()
+    store = CalibrationStore()
 
     @app.get("/health")
     async def health():
@@ -52,6 +57,24 @@ def create_app(orchestrator=None):
     @app.get("/workers")
     async def workers():
         return {"workers": [s.model_dump() for s in orch.registry.pool()]}
+
+    @app.get("/calibration")
+    async def calibration():
+        return store.table().model_dump()
+
+    @app.post("/measure")
+    async def run_measure():
+        table = await measure(orch.registry, load_bank(), verifiers)
+        store.replace(table)
+        return table.model_dump()
+
+    @app.post("/eval")
+    async def run_eval():
+        baseline = orch.planner.conductor.spec.id
+        report = await evaluate(
+            orch, orch.registry, load_bank(), verifiers, baseline_worker_id=baseline
+        )
+        return report.model_dump()
 
     @app.post("/v1/chat/completions")
     async def chat_completions(body: ChatRequest):
