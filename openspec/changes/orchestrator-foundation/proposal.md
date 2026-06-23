@@ -8,7 +8,7 @@ This change establishes that tool: a local-first, bring-your-own-everything orch
 
 - **A local-first orchestration runtime** that plans a task into a DAG of subtasks, executes it over a worker pool, verifies step outputs, escalates failing steps via local sub-plans, and synthesizes one answer. Single-process, async, runs on the user's machine.
 - **A pluggable adapter layer** so users plug in their own backends. **BREAKING from the source spec's "everything is a LiteLLM target":** LiteLLM becomes *one* adapter among several. v1 ships three adapter kinds: metered API (LiteLLM), **Claude subscription via `claude -p` headless** (`CLAUDE_CODE_OAUTH_TOKEN`, `--json-schema`, `--bare`), and local OpenAI-compatible endpoints (Ollama/vLLM).
-- **A conductor (planner) that is itself pluggable** — any strong model, including the Claude subscription, emits a strict JSON `Plan`. Reserved for the low-call-count planning role so it survives subscription rate limits.
+- **A conductor (planner) that is itself pluggable** — any strong model, including the Claude subscription, emits a strict JSON `Plan`. Best suited to the low-call-count planning role; the subscription may also take select high-value worker steps, with the `max_subscription_prompts` budget axis keeping it within rate limits.
 - **Verifier-triggered escalation** (`code_exec`, `math_equiv`, `exact_match`) — the only thing that turns an unmeasured plan into a *measurable* win. No verifier ⇒ no escalation ⇒ no win claim.
 - **A multi-axis budget enforcer** — generalizes per-token USD into USD **or** wall-clock **or** subscription-prompts, enforced centrally so a runaway loop cannot exhaust a daily quota.
 - **An offline measurement + eval harness** — measures which of the user's plugged-in models wins which task type (calibration), and proves the orchestrator ≥ best single worker (the headline claim, **anchored to Baseline A**: orchestrating model X vs single-shot model X).
@@ -18,7 +18,7 @@ This change establishes that tool: a local-first, bring-your-own-everything orch
 ### Non-goals (v1)
 
 - Hosted multi-tenant SaaS on a shared subscription (Anthropic disallows third-party subscription bridging; cloud tier, if any, uses API keys and charges fees).
-- Fanning worker calls onto a subscription (rate-limit suicide — subscription is conductor-only).
+- Broad parallel fan-out of workers onto a subscription (rate-limit suicide); the subscription serves the conductor and select high-value steps, capped by the budget axis — not parallel breadth.
 - A trained planner (Conductor GRPO recipe) — deferred; the frontier/subscription planner captures most of the gain.
 - LLM-judge verifiers and non-verifiable domains as a *win* claim — escalation has no signal there; an unverified "decompose + synthesize" mode may exist but is labeled weaker, with no performance claim.
 - Distributed multi-node execution; token-by-token streaming of the *final* answer.

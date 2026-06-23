@@ -36,15 +36,15 @@ A step SHALL escalate only when its verifier returns a failure. A step with no v
 - **THEN** exactly one local sub-plan is spawned for that step
 
 ### Requirement: Escalation primitives with depth bound
-The runtime SHALL support three primitives: `normal` (run once), `replan` (on verifier fail, execute a local sub-plan bounded by `max_depth`), and `react` (a bounded observe→decide→act loop bounded by `max_react_steps`). Recursion depth SHALL never exceed `budget.max_depth`.
+The runtime SHALL support `normal` (run once) and `replan` (on verifier fail, execute a local sub-plan bounded by `max_depth`) in v1, and recursion depth SHALL never exceed `budget.max_depth`. The `react` primitive (a bounded observe→decide→act loop) is reserved in the `Primitive` enum and plan schema but deferred beyond v1; until it is implemented the planner SHALL NOT emit `react`.
 
 #### Scenario: Replan respects depth limit
 - **WHEN** a `replan` step fails its verifier but the current depth already equals `max_depth`
 - **THEN** no further sub-plan is spawned and the failing output is accepted
 
-#### Scenario: React loop is bounded
-- **WHEN** a `react` step enters its loop
-- **THEN** it performs at most `max_react_steps` iterations, each charged to the budget, before terminating
+#### Scenario: React is not emitted in v1
+- **WHEN** the conductor produces a v1 plan
+- **THEN** no step uses the `react` primitive
 
 ### Requirement: Answer synthesis
 After execution, the runtime SHALL synthesize the step results into a single answer: passthrough for a single terminal step, and a combining step for multiple results.

@@ -30,8 +30,12 @@ The conductor SHALL be implemented behind a `Planner` interface so any strong ba
 - **THEN** the system surfaces a warning recommending a stronger conductor (subscription or strong API model)
 
 ### Requirement: Frugal planning
-The conductor SHALL default steps to `normal`, reserve `replan` for checkable steps likely to need a second attempt, reserve `react` for external-signal steps, and SHALL be permitted to emit a single-step plan for easy prompts.
+The conductor SHALL default steps to `normal`, reserve `replan` for checkable steps likely to need a second attempt, and SHALL be permitted to emit a single-step plan for easy prompts. In v1 the conductor SHALL NOT emit the `react` primitive (deferred — see the escalation-primitives requirement).
 
 #### Scenario: Easy prompt yields a minimal plan
 - **WHEN** the conductor assesses a prompt as easy
 - **THEN** it may emit a single-step plan rather than adding steps that do not earn their cost
+
+#### Scenario: No react in v1 plans
+- **WHEN** the conductor emits a v1 plan
+- **THEN** it uses only `normal` and `replan` primitives

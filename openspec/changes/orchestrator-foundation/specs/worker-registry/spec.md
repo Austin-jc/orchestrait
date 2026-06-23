@@ -28,9 +28,13 @@ The registry SHALL let a user test a worker's connectivity and basic completion 
 - **THEN** the test returns a failure with a human-readable reason
 - **AND** the worker is not marked ready
 
-### Requirement: Subscription adapter is conductor-eligible only
-A `claude_subscription` worker SHALL be flagged conductor-eligible and SHALL NOT be selectable as a fan-out worker target, to protect the subscription rate-limit budget.
+### Requirement: Subscription adapter usage is budget-governed across roles
+A `claude_subscription` worker SHALL be usable both as the conductor and as a worker for select high-value steps when the task suits it. All subscription calls SHALL be charged to the `max_subscription_prompts` budget axis regardless of role, and the run SHALL halt before any subscription call that would exceed that axis. The planner SHALL prefer non-subscription workers for parallel fan-out breadth.
 
-#### Scenario: Subscription worker cannot be a fan-out worker
-- **WHEN** a plan attempts to assign a fan-out execution step to a `claude_subscription` worker
-- **THEN** the assignment is rejected and surfaced as a configuration error
+#### Scenario: Subscription worker accepted for a high-value step within budget
+- **WHEN** a plan assigns a high-value step to a `claude_subscription` worker and the subscription budget has remaining capacity
+- **THEN** the call proceeds and is charged to `max_subscription_prompts`
+
+#### Scenario: Subscription call blocked when its budget is exhausted
+- **WHEN** a subscription call, in any role, would exceed `max_subscription_prompts`
+- **THEN** the run halts before issuing the call

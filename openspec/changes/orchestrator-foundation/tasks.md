@@ -20,7 +20,7 @@
 - [ ] 3.1 Implement the `local_openai` adapter (Ollama/vLLM/LM Studio base URL + model; usage charged as wall-clock)
 - [ ] 3.2 Implement the `claude_subscription` adapter driving `claude -p --bare --output-format json --json-schema <Plan> --append-system-prompt`, using `CLAUDE_CODE_OAUTH_TOKEN`
 - [ ] 3.3 Add the `max_subscription_prompts` budget axis and per-adapter native-unit usage reporting
-- [ ] 3.4 Enforce subscription conductor-eligibility (reject `claude_subscription` as a fan-out worker target)
+- [ ] 3.4 Enforce subscription budget governance: charge every `claude_subscription` call (any role) to `max_subscription_prompts`, allow conductor + select worker steps, block calls that would exceed the axis, and guide the planner to prefer non-subscription workers for fan-out
 - [ ] 3.5 Implement worker connection testing (success / human-readable failure) used before a worker is marked ready
 - [ ] 3.6 Implement a local encrypted secrets store for BYO API keys (no plaintext logs)
 
@@ -44,7 +44,7 @@
 - [ ] 6.2 Implement `exact_match` and `math_equiv` (sympy/numeric) verifiers with fixture tests
 - [ ] 6.3 Implement `code_exec` behind a swappable sandbox boundary (subprocess + CPU/mem/time rlimits); verify containment of resource-exhausting code
 - [ ] 6.4 Implement the `replan` primitive (recursive sub-plan via `planner.replan`) with `max_depth` enforcement; escalate only on `verdict.failed`
-- [ ] 6.5 Implement the `react` primitive (`react_loop` bounded by `max_react_steps`, each iteration budgeted)
+- [ ] 6.5 (Deferred, post-v1) `react` primitive (`react_loop`) — out of v1 scope per D11; keep it reserved in the schema and instruct the planner not to emit `react`
 - [ ] 6.6 Surface `escalation` events so the UI expands a failing `replan` node into an inline nested sub-graph
 - [ ] 6.7 Test that an unverified step never escalates and a verified failing step triggers exactly one replan within depth
 
