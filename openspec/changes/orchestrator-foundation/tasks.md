@@ -17,12 +17,12 @@
 
 ## 3. Plug-in backends (BYO models, keys, subscription)
 
-- [ ] 3.1 Implement the `local_openai` adapter (Ollama/vLLM/LM Studio base URL + model; usage charged as wall-clock)
-- [ ] 3.2 Implement the `claude_subscription` adapter driving `claude -p --bare --output-format json --json-schema <Plan> --append-system-prompt`, using `CLAUDE_CODE_OAUTH_TOKEN`
-- [ ] 3.3 Add the `max_subscription_prompts` budget axis and per-adapter native-unit usage reporting
-- [ ] 3.4 Enforce subscription budget governance: charge every `claude_subscription` call (any role) to `max_subscription_prompts`, allow conductor + select worker steps, block calls that would exceed the axis, and guide the planner to prefer non-subscription workers for fan-out
-- [ ] 3.5 Implement worker connection testing (success / human-readable failure) used before a worker is marked ready
-- [ ] 3.6 Implement a local encrypted secrets store for BYO API keys (no plaintext logs)
+- [x] 3.1 Implement the `local_openai` adapter (Ollama/vLLM/LM Studio base URL + model; usage charged as wall-clock)
+- [x] 3.2 Implement the `claude_subscription` adapter driving `claude -p --bare --output-format json --json-schema <Plan> --append-system-prompt`, using `CLAUDE_CODE_OAUTH_TOKEN`
+- [x] 3.3 Add the `max_subscription_prompts` budget axis and per-adapter native-unit usage reporting
+- [x] 3.4 Enforce subscription budget governance: charge every `claude_subscription` call (any role) to `max_subscription_prompts`, allow conductor + select worker steps, block calls that would exceed the axis, and guide the planner to prefer non-subscription workers for fan-out
+- [x] 3.5 Implement worker connection testing (success / human-readable failure) used before a worker is marked ready
+- [x] 3.6 Implement a local encrypted secrets store for BYO API keys (no plaintext logs)
 
 ## 4. Observability and live event stream
 

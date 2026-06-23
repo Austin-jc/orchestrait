@@ -101,6 +101,8 @@ class WorkerSpec(BaseModel):
     served: str = "api"           # "api" | "local"
     conductor_eligible: bool = True
     capabilities: dict[str, float] = Field(default_factory=dict)
+    api_base: str | None = None   # endpoint for local_openai/litellm
+    secret_ref: str | None = None  # name of the env var / stored secret for this worker's key/token
 
 
 class RunTrace(BaseModel):

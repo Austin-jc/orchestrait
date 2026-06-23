@@ -1,15 +1,40 @@
-"""Wire a `Config` into a runnable `Orchestrator`. For M1 only `mock` and
-`litellm` adapters are available; phase 3 adds `local_openai` and
-`claude_subscription`."""
+"""Wire a `Config` into a runnable `Orchestrator`. Adapter kinds: `mock`,
+`litellm`, `local_openai`, `claude_subscription`. Secrets are resolved from the
+environment first (no file side effects), then the local encrypted store."""
 
 from __future__ import annotations
 
 import json
+import os
 
 from .config import Config
 from .runtime import DefaultSynthesizer, Executor, FrontierLLMPlanner, Orchestrator
 from .types import WorkerSpec
-from .workers import LiteLLMAdapter, MockWorkerAdapter, WorkerRegistry
+from .workers import (
+    ClaudeSubscriptionAdapter,
+    LiteLLMAdapter,
+    LocalOpenAIAdapter,
+    MockWorkerAdapter,
+    WorkerRegistry,
+)
+
+
+def _make_secret_resolver():
+    store = {"obj": None}
+
+    def resolve(ref: str | None) -> str | None:
+        if not ref:
+            return None
+        env = os.environ.get(ref)
+        if env:
+            return env
+        if store["obj"] is None:
+            from .secrets import SecretsStore
+
+            store["obj"] = SecretsStore()
+        return store["obj"].get(ref)
+
+    return resolve
 
 
 def _mock_responder(spec: WorkerSpec, workers: list[WorkerSpec]):
@@ -36,22 +61,31 @@ def _mock_responder(spec: WorkerSpec, workers: list[WorkerSpec]):
     return responder
 
 
-def build_adapter(spec: WorkerSpec, *, config: Config, workers: list[WorkerSpec]):
+def build_adapter(spec: WorkerSpec, *, config: Config, workers: list[WorkerSpec], resolve_secret):
     if spec.kind == "mock":
         return MockWorkerAdapter(spec, responder=_mock_responder(spec, workers))
     if spec.kind == "litellm":
-        return LiteLLMAdapter(spec, prices=config.prices)
-    raise ValueError(
-        f"Adapter kind '{spec.kind}' is not available yet "
-        f"(phase 3 adds local_openai and claude_subscription)."
-    )
+        return LiteLLMAdapter(spec, prices=config.prices, api_base=spec.api_base)
+    if spec.kind == "local_openai":
+        return LocalOpenAIAdapter(
+            spec,
+            api_base=spec.api_base or "http://localhost:11434/v1",
+            api_key=resolve_secret(spec.secret_ref),
+        )
+    if spec.kind == "claude_subscription":
+        token = resolve_secret(spec.secret_ref) or os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
+        return ClaudeSubscriptionAdapter(spec, oauth_token=token)
+    raise ValueError(f"Unknown adapter kind '{spec.kind}'.")
 
 
 def build_orchestrator(config: Config) -> Orchestrator:
     workers = config.workers
     if not workers:
         raise ValueError("No workers configured. Add a `workers:` list to config.yaml.")
-    adapters = [build_adapter(s, config=config, workers=workers) for s in workers]
+    resolve_secret = _make_secret_resolver()
+    adapters = [
+        build_adapter(s, config=config, workers=workers, resolve_secret=resolve_secret) for s in workers
+    ]
     registry = WorkerRegistry(adapters)
     conductor = registry.get(config.conductor_worker_id)
     d = config.defaults

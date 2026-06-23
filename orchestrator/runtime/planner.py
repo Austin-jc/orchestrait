@@ -37,6 +37,9 @@ Rules:
 - Assess difficulty first. A single-step plan is fine for easy prompts. Reward frugality.
 - `access` lists the indices of earlier steps whose output this step may read
   ("all" = every prior step, [] = none).
+- Cost: prefer free/local workers for parallel breadth. Use a "subscription
+  (scarce)" worker for at most one or two high-value steps; never fan many
+  steps onto it.
 - In this version use ONLY the "normal" primitive.
 - Return JSON only, no prose, no code fences.
 """

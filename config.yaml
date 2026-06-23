@@ -30,6 +30,29 @@ workers:
     name: mock-coder
     capabilities: {code-gen: 0.7}
 
+  # --- Real backends (uncomment and adjust) ---
+  #
+  # Local model via Ollama / vLLM / LM Studio (cost = wall-clock, free):
+  # - id: 2
+  #   kind: local_openai
+  #   name: llama3.1:8b
+  #   api_base: http://localhost:11434/v1
+  #
+  # Metered API via LiteLLM (cost = USD; key from the named env var/secret):
+  # - id: 3
+  #   kind: litellm
+  #   name: gpt-4o-mini
+  #   secret_ref: OPENAI_API_KEY
+  #
+  # Claude Pro/Max subscription via `claude -p` headless (conductor-friendly;
+  # token from `claude setup-token` -> CLAUDE_CODE_OAUTH_TOKEN). Reserve for the
+  # conductor + a few high-value steps; never fan many workers onto it.
+  # - id: 4
+  #   kind: claude_subscription
+  #   name: claude-subscription
+  #   conductor_eligible: true
+  #   secret_ref: CLAUDE_CODE_OAUTH_TOKEN
+
 # Per-model price map for litellm USD cost (USD per 1K tokens). Optional;
 # litellm computes cost itself when it can.
 prices: {}

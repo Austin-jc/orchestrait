@@ -5,7 +5,7 @@ and verifier-triggered escalation land in phase 6."""
 from __future__ import annotations
 
 from ..types import Plan, Step, StepResult
-from .budget import BudgetEnforcer
+from .budget import BudgetEnforcer, BudgetExceeded
 
 
 def build_context(prompt: str, step: Step, results: list[StepResult]) -> list[dict]:
@@ -50,6 +50,14 @@ class Executor:
             enforcer.check()  # raises BudgetExceeded -> caller keeps partial `sink`
             context = build_context(prompt, step, results)
             adapter = self.registry.get(step.worker_id)
+            # Subscription governance (D4): block a call that would push the
+            # subscription-prompt axis over budget, before issuing it.
+            if getattr(adapter.spec, "kind", "") == "claude_subscription" and enforcer.would_exceed_subscription(1):
+                raise BudgetExceeded(
+                    "max_subscription_prompts",
+                    enforcer.budget.max_subscription_prompts,
+                    enforcer.subscription_prompts + 1,
+                )
             output, usage = await adapter.call(context, **self._cfg(step))
             enforcer.add_usage(usage)
             results.append(

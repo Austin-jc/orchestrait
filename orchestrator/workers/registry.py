@@ -16,6 +16,17 @@ class _Calibration(Protocol):  # structural; real type lands in phase 7
     def for_worker(self, worker_id: int) -> dict[str, float]: ...
 
 
+# Cost hints exposed to the planner — a cost property, not a brand name. Lets
+# the planner prefer free/local workers for breadth and spend subscription
+# calls sparingly (D4).
+COST_HINTS = {
+    "mock": "free/local",
+    "local_openai": "free/local",
+    "litellm": "metered $",
+    "claude_subscription": "subscription (scarce — avoid fan-out)",
+}
+
+
 class WorkerRegistry:
     def __init__(self, adapters: list["WorkerAdapter"]) -> None:
         self._by_id: dict[int, "WorkerAdapter"] = {}
@@ -42,6 +53,11 @@ class WorkerRegistry:
             if not caps:
                 caps = [f"{k} {v:.2f}" for k, v in sorted(spec.capabilities.items(), key=lambda kv: -kv[1])]
             cap_str = ", ".join(caps) if caps else "no priors yet"
-            role = " [conductor-eligible]" if spec.conductor_eligible else ""
-            lines.append(f"Model {spec.id} — {cap_str}{role}")
+            cost = COST_HINTS.get(spec.kind, "unknown cost")
+            role = ", conductor-eligible" if spec.conductor_eligible else ""
+            lines.append(f"Model {spec.id} — {cap_str} [cost: {cost}{role}]")
         return "\n".join(lines)
+
+    async def test(self, worker_id: int) -> tuple[bool, str]:
+        """Connectivity/basic-completion check before a worker is used (3.5)."""
+        return await self.get(worker_id).test_connection()
