@@ -1,19 +1,19 @@
 ## 1. Project scaffolding
 
-- [ ] 1.1 Create Python package layout (`orchestrator/` with `runtime/`, `workers/`, `verify/`, `calibration/`, `measurement/`, `api/`) and `pyproject.toml` with deps (litellm, pydantic>=2, pydantic-settings, fastapi, uvicorn, pyyaml, tenacity, pytest, pytest-asyncio)
-- [ ] 1.2 Implement `types.py` Pydantic models: `Primitive`, `Step`, `Budget` (multi-axis), `Plan`, `StepResult`, `Answer`, `WorkerSpec`, `Verdict`, `RunTrace`
-- [ ] 1.3 Implement `config.py` (Pydantic `BaseSettings` + `config.yaml`; secrets via env, never in code)
-- [ ] 1.4 Set up pytest + pytest-asyncio and a `MockWorkerAdapter` for deterministic unit tests
+- [x] 1.1 Create Python package layout (`orchestrator/` with `runtime/`, `workers/`, `verify/`, `calibration/`, `measurement/`, `api/`) and `pyproject.toml` with deps (litellm, pydantic>=2, pydantic-settings, fastapi, uvicorn, pyyaml, tenacity, pytest, pytest-asyncio)
+- [x] 1.2 Implement `types.py` Pydantic models: `Primitive`, `Step`, `Budget` (multi-axis), `Plan`, `StepResult`, `Answer`, `WorkerSpec`, `Verdict`, `RunTrace`
+- [x] 1.3 Implement `config.py` (Pydantic `BaseSettings` + `config.yaml`; secrets via env, never in code)
+- [x] 1.4 Set up pytest + pytest-asyncio and a `MockWorkerAdapter` for deterministic unit tests
 
 ## 2. Core runtime skeleton (single-pass, no escalation)
 
-- [ ] 2.1 Define the `WorkerAdapter` SPI and implement the `litellm` adapter (returns text + USD usage from token×price map)
-- [ ] 2.2 Implement `WorkerRegistry` with ordinal exposure (`Model 0…k`) and capability metadata; concrete model strings hidden from planner prompts
-- [ ] 2.3 Implement `BudgetEnforcer` as the single non-bypassable gate with `max_spend_usd` + `max_wall_seconds`, raising `BudgetExceeded`
-- [ ] 2.4 Implement `FrontierLLMPlanner` emitting `normal`-only plans with strict JSON parse + validate-and-retry-once
-- [ ] 2.5 Implement `Executor` with pure `build_context` (access edges: `"all"` / `[]` / `[i,j]`), normal-only dispatch, no escalation
-- [ ] 2.6 Implement passthrough `Synthesizer` (single terminal step) and a multi-result combiner
-- [ ] 2.7 Wire `orchestrator.run(prompt) -> Answer` and a CLI entrypoint; test that a multi-step plan executes with correct access wiring and the budget halts a runaway
+- [x] 2.1 Define the `WorkerAdapter` SPI and implement the `litellm` adapter (returns text + USD usage from token×price map)
+- [x] 2.2 Implement `WorkerRegistry` with ordinal exposure (`Model 0…k`) and capability metadata; concrete model strings hidden from planner prompts
+- [x] 2.3 Implement `BudgetEnforcer` as the single non-bypassable gate with `max_spend_usd` + `max_wall_seconds`, raising `BudgetExceeded`
+- [x] 2.4 Implement `FrontierLLMPlanner` emitting `normal`-only plans with strict JSON parse + validate-and-retry-once
+- [x] 2.5 Implement `Executor` with pure `build_context` (access edges: `"all"` / `[]` / `[i,j]`), normal-only dispatch, no escalation
+- [x] 2.6 Implement passthrough `Synthesizer` (single terminal step) and a multi-result combiner
+- [x] 2.7 Wire `orchestrator.run(prompt) -> Answer` and a CLI entrypoint; test that a multi-step plan executes with correct access wiring and the budget halts a runaway
 
 ## 3. Plug-in backends (BYO models, keys, subscription)
 

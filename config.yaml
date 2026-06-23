@@ -1,0 +1,36 @@
+# Orchestrait runtime configuration.
+# Secrets (API keys, tokens) come from environment variables, never this file.
+
+defaults:
+  budget:
+    max_depth: 2
+    max_react_steps: 4
+    max_spend_usd: 0.50
+    max_wall_seconds: 120.0
+    max_subscription_prompts: 50
+  temperature: 0.2
+  max_tokens: 1024
+
+# The conductor (planner). Referenced by ordinal; concrete model is hidden
+# from the planner prompt.
+conductor:
+  worker_id: 0
+
+# Worker pool. `kind` selects the adapter; `name` is the concrete model string
+# (hidden from the planner, which sees Model 0..k by ordinal).
+#   kind: mock | litellm | local_openai | claude_subscription
+workers:
+  - id: 0
+    kind: mock
+    name: mock-strong
+    conductor_eligible: true
+    capabilities: {planning: 0.8, code-gen: 0.6}
+  - id: 1
+    kind: mock
+    name: mock-coder
+    capabilities: {code-gen: 0.7}
+
+# Per-model price map for litellm USD cost (USD per 1K tokens). Optional;
+# litellm computes cost itself when it can.
+prices: {}
+  # "gpt-4o-mini": {input: 0.00015, output: 0.0006}

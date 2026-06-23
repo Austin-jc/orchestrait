@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orchestrait"
+version = "0.1.0"
+description = "Local-first multi-model orchestrator: plan a task into a DAG, execute over a worker pool, verify, escalate, and prove the win."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2",
+    "pydantic-settings>=2",
+    "pyyaml>=6",
+    "tenacity>=8",
+]
+
+[project.optional-dependencies]
+litellm = ["litellm>=1.40"]
+api = ["fastapi>=0.110", "uvicorn>=0.29"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+orchestrait = "orchestrator.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["orchestrator*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
